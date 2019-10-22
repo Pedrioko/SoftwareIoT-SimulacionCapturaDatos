@@ -6,19 +6,35 @@
 package com.udec.sistemaiot.domain;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.List;
 
 /**
- *
  * @author PedroD
  */
+@Document(collection = "sensors")
 public class Sensor {
+
+
+    @Transient
+    public static final String SEQUENCE_NAME = "sensors_sequence";
     @Id
     private long id;
     private String nombre;
     private String descripcion;
     private String puerto;
 
+    private List<Dato> historial;
+
     public Sensor() {
+    }
+
+    public Sensor(String nombre, String descripcion, String puerto) {
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.puerto = puerto;
     }
 
     public long getId() {
@@ -51,6 +67,14 @@ public class Sensor {
 
     public void setPuerto(String puerto) {
         this.puerto = puerto;
+    }
+
+    public List<Dato> getHistorial() {
+        return historial;
+    }
+
+    public void setHistorial(List<Dato> historial) {
+        this.historial = historial;
     }
 
     @Override
