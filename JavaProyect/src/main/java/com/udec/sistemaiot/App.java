@@ -1,30 +1,43 @@
 package com.udec.sistemaiot;
 
 import com.udec.sistemaiot.dao.SensorRepository;
-import com.udec.sistemaiot.domain.Dato;
-import com.udec.sistemaiot.domain.Sensor;
+import com.udec.sistemaiot.ui.MainFrame;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
 
-import java.util.ArrayList;
-import java.util.Date;
+import javax.swing.*;
 
 @SpringBootApplication
-public class AccessingDataMongodbApplication implements CommandLineRunner {
+public class App implements CommandLineRunner {
 
 
+    public static ConfigurableApplicationContext Ctx;
     @Autowired
     private SensorRepository repository;
 
     public static void main(String[] args) {
-        SpringApplication.run(AccessingDataMongodbApplication.class, args);
+        Ctx = new SpringApplicationBuilder(App.class)
+                .headless(false)
+                .run(args);
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ex) {
+            java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(() -> {
+            new MainFrame().setVisible(true);
+        });
     }
 
     @Override
     public void run(String... args) throws Exception {
-
+/*
         repository.deleteAll();
 
         // save a couple of customers
@@ -63,6 +76,6 @@ public class AccessingDataMongodbApplication implements CommandLineRunner {
         for (Sensor customer : repository.findByNombre("11")) {
             System.out.println(customer);
         }
-
+*/
     }
 }
