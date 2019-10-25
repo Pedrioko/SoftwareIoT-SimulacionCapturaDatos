@@ -1,11 +1,14 @@
 package com.udec.sistemaiot;
 
+import com.udec.sistemaiot.dao.SensorRepository;
+import com.udec.sistemaiot.domain.query.AvgData;
 import com.udec.sistemaiot.ui.MainFrame;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import javax.swing.*;
+import java.util.List;
 
 @SpringBootApplication
 public class App {
@@ -22,9 +25,7 @@ public class App {
         } catch (Exception ex) {
             java.util.logging.Logger.getLogger(MainFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-        //</editor-fold>
-
-        /* Create and display the form */
+     //   List<AvgData> com5 = Ctx.getBean(SensorRepository.class).avghum("COM5");
         java.awt.EventQueue.invokeLater(() -> {
             new MainFrame().setVisible(true);
         });

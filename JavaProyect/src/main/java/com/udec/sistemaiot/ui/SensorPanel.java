@@ -28,7 +28,10 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,6 +41,7 @@ import java.util.stream.Collectors;
  */
 public class SensorPanel extends javax.swing.JPanel {
 
+    public static int COUNT_DATOS = 40;
     private final RealtimeService realtimeService;
     private final SensorRepository sensorRepository;
     private Sensor sensor;
@@ -54,9 +58,16 @@ public class SensorPanel extends javax.swing.JPanel {
         realtimeService = App.Ctx.getBean(RealtimeService.class);
         realtimeService.putHumedadLabel(this.sensor.getPuerto(), this.jlHumedad);
         realtimeService.putTempLabel(this.sensor.getPuerto(), this.jlTemp);
+        jcbNdatos.setSelectedItem(String.valueOf(COUNT_DATOS));
+        jcbNdatos.addItemListener(e -> {
+            Object o = e.getItem();
+            COUNT_DATOS = Integer.valueOf(String.valueOf(o));
+        });
+        
+        
         DatasetHistoric dataset = createDatasetHistorical(sensor.getHistorial());
 
-        JFreeChart charthistorictemp = createHistoric("Temperatura historica", "# Dato", "Temperatura", dataset.getDatasetHumedad());
+        JFreeChart charthistorictemp = createHistoric("Temperatura historica", "# Dato", "Temperatura", dataset.getDatasetTemperatura());
         ChartPanel panelhistorictemp = new ChartPanel(charthistorictemp);
         panelhistorictemp.setPreferredSize(new Dimension(460, 350));
         jpHistoricoTemp.setLayout(new BorderLayout());
@@ -91,8 +102,10 @@ public class SensorPanel extends javax.swing.JPanel {
         jpLinealTemp.validate();
 
         loadMedias(this.sensor);
+        loadTable(this.sensor);
         realtimeService.putActionMap(this.sensor.getPuerto(), e -> {
-            List<Dato> historialTotal = ((Sensor) e).getHistorial();
+            Sensor sensorNew = (Sensor) e;
+            List<Dato> historialTotal = (sensorNew).getHistorial();
             List<Dato> historial = getUsableList(historialTotal);
             DatasetHistoric datasetHistorical = createDatasetHistorical(historial);
             charthistorichum.getCategoryPlot().setDataset(datasetHistorical.getDatasetHumedad());
@@ -106,7 +119,8 @@ public class SensorPanel extends javax.swing.JPanel {
             chartlinearTemp.getXYPlot().setDataset(datasetLinear.getDatasetTemperatura());
             panelLinearTemp.repaint();
 
-            loadMedias((Sensor) e);
+            loadMedias(sensorNew);
+            loadTable(sensorNew);
         });
 
     }
@@ -116,10 +130,10 @@ public class SensorPanel extends javax.swing.JPanel {
         double avgHum = Stats.getAvg(hum);
         List<Double> temp = sensor.getHistorial().stream().map(e -> e.getTemperatura()).collect(Collectors.toList());
         double avgTemp = Stats.getAvg(temp);
-        jlMediaHum.setText( String.valueOf(Math.round(avgHum * 100) / 100D));
-        jlMediaTemp.setText(String.valueOf(Math.round(avgTemp * 100) / 100D));
-        jlDesviacionHum.setText(String.valueOf(Math.round(Stats.getStdDev(hum) * 100) / 100D));
-        jlDesviacionTemp.setText(String.valueOf(Math.round(Stats.getStdDev(temp) * 100) / 100D));
+        jlMediaHum.setText(Math.round(avgHum * 100) / 100D + "%");
+        jlMediaTemp.setText(Math.round(avgTemp * 100) / 100D + "º");
+        jlDesviacionHum.setText(Math.round(Stats.getStdDev(hum) * 100) / 100D + "%");
+        jlDesviacionTemp.setText(Math.round(Stats.getStdDev(temp) * 100) / 100D + "º");
     }
 
     private JFreeChart createHistoric(String title, String xaxis, String yaxis, DefaultCategoryDataset dataset) {
@@ -137,6 +151,16 @@ public class SensorPanel extends javax.swing.JPanel {
         return scatterPlot;
     }
 
+    private void loadTable(Sensor sensor) {
+        DefaultTableModel model = (DefaultTableModel) jtDatos.getModel();
+        model.setRowCount(0);
+        List<Dato> historial = sensor.getHistorial();
+        historial.stream()
+                .sorted((x, y) -> y.getFecha_creacion().compareTo(x.getFecha_creacion()))
+                .map(e -> new Object[]{historial.indexOf(e) + 1, e.getTemperatura(), e.getHumedad(), e.getFecha_creacion()})
+                .forEach(model::addRow);
+
+    }
 
     private DatasetLinear createDatasetLinear(List<Dato> datoList) {
         XYSeriesCollection datasetHumedad = new XYSeriesCollection();
@@ -173,8 +197,8 @@ public class SensorPanel extends javax.swing.JPanel {
         List<Dato> historial = datoList;
         historial.sort((x, y) -> y.getFecha_creacion().compareTo(x.getFecha_creacion()));
         if (historial != null) {
-            if (historial.size() > 40)
-                historial = historial.subList(0, 40);
+            if (historial.size() > COUNT_DATOS)
+                historial = historial.subList(0, COUNT_DATOS);
             return historial;
         } else {
             return Collections.EMPTY_LIST;
@@ -220,12 +244,14 @@ public class SensorPanel extends javax.swing.JPanel {
         jlTemp = new javax.swing.JLabel();
         jLabel9 = new javax.swing.JLabel();
         jlHumedad = new javax.swing.JLabel();
+        jLabel13 = new javax.swing.JLabel();
+        jcbNdatos = new javax.swing.JComboBox<>();
         jLabel6 = new javax.swing.JLabel();
-        jlMediaHum = new javax.swing.JLabel();
         jlMediaTemp = new javax.swing.JLabel();
+        jlMediaHum = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
-        jlDesviacionHum = new javax.swing.JLabel();
         jlDesviacionTemp = new javax.swing.JLabel();
+        jlDesviacionHum = new javax.swing.JLabel();
         jLabel11 = new javax.swing.JLabel();
         jLabel12 = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
@@ -279,6 +305,15 @@ public class SensorPanel extends javax.swing.JPanel {
         jlHumedad.setText(" ");
         jlHumedad.setBorder(new javax.swing.border.SoftBevelBorder(javax.swing.border.BevelBorder.RAISED));
 
+        jLabel13.setText("# de Datos");
+
+        jcbNdatos.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "10", "20", "30", "40", "50", "100", "150", "200", "400" }));
+        jcbNdatos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jcbNdatosActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
@@ -291,6 +326,12 @@ public class SensorPanel extends javax.swing.JPanel {
                     .addComponent(jLabel9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jlHumedad, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap())
+            .addGroup(jPanel6Layout.createSequentialGroup()
+                .addGap(32, 32, 32)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jcbNdatos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel13))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         jPanel6Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {jlHumedad, jlTemp});
@@ -305,20 +346,17 @@ public class SensorPanel extends javax.swing.JPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel9)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jlHumedad, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(jlHumedad, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel13)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jcbNdatos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         jPanel6Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {jlHumedad, jlTemp});
 
         jLabel6.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
         jLabel6.setText("Medias");
-
-        jlMediaHum.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jlMediaHum.setText("  ");
-        jlMediaHum.setBorder(javax.swing.BorderFactory.createEtchedBorder());
-        jlMediaHum.setMaximumSize(new java.awt.Dimension(20, 18));
-        jlMediaHum.setMinimumSize(new java.awt.Dimension(20, 18));
-        jlMediaHum.setPreferredSize(new java.awt.Dimension(20, 18));
 
         jlMediaTemp.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jlMediaTemp.setText("  ");
@@ -327,15 +365,15 @@ public class SensorPanel extends javax.swing.JPanel {
         jlMediaTemp.setMinimumSize(new java.awt.Dimension(20, 18));
         jlMediaTemp.setPreferredSize(new java.awt.Dimension(20, 18));
 
+        jlMediaHum.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jlMediaHum.setText("  ");
+        jlMediaHum.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        jlMediaHum.setMaximumSize(new java.awt.Dimension(20, 18));
+        jlMediaHum.setMinimumSize(new java.awt.Dimension(20, 18));
+        jlMediaHum.setPreferredSize(new java.awt.Dimension(20, 18));
+
         jLabel10.setFont(new java.awt.Font("Tahoma", 1, 18)); // NOI18N
         jLabel10.setText("Deviación");
-
-        jlDesviacionHum.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jlDesviacionHum.setText("  ");
-        jlDesviacionHum.setBorder(javax.swing.BorderFactory.createEtchedBorder());
-        jlDesviacionHum.setMaximumSize(new java.awt.Dimension(20, 18));
-        jlDesviacionHum.setMinimumSize(new java.awt.Dimension(20, 18));
-        jlDesviacionHum.setPreferredSize(new java.awt.Dimension(20, 18));
 
         jlDesviacionTemp.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jlDesviacionTemp.setText("  ");
@@ -343,6 +381,13 @@ public class SensorPanel extends javax.swing.JPanel {
         jlDesviacionTemp.setMaximumSize(new java.awt.Dimension(20, 18));
         jlDesviacionTemp.setMinimumSize(new java.awt.Dimension(20, 18));
         jlDesviacionTemp.setPreferredSize(new java.awt.Dimension(20, 18));
+
+        jlDesviacionHum.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jlDesviacionHum.setText("  ");
+        jlDesviacionHum.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        jlDesviacionHum.setMaximumSize(new java.awt.Dimension(20, 18));
+        jlDesviacionHum.setMinimumSize(new java.awt.Dimension(20, 18));
+        jlDesviacionHum.setPreferredSize(new java.awt.Dimension(20, 18));
 
         jLabel11.setFont(new java.awt.Font("Tahoma", 1, 11)); // NOI18N
         jLabel11.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -381,17 +426,17 @@ public class SensorPanel extends javax.swing.JPanel {
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jlMediaHum, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jlMediaTemp, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
                                 .addComponent(jLabel11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addGap(18, 18, 18)
-                                .addComponent(jlDesviacionHum, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(jlDesviacionTemp, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jlMediaTemp, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jlMediaHum, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
                                 .addComponent(jLabel12, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
-                                .addComponent(jlDesviacionTemp, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addComponent(jlDesviacionHum, javax.swing.GroupLayout.PREFERRED_SIZE, 63, javax.swing.GroupLayout.PREFERRED_SIZE)))
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
@@ -406,33 +451,37 @@ public class SensorPanel extends javax.swing.JPanel {
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(14, 14, 14)
+                        .addGap(142, 142, 142)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jlMediaTemp, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel12)))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel2)
-                            .addComponent(jlNombre))
-                        .addGap(11, 11, 11)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel3)
-                            .addComponent(jlPuerto))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel6)
-                            .addComponent(jLabel10))
-                        .addGap(6, 6, 6)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jlDesviacionHum, javax.swing.GroupLayout.PREFERRED_SIZE, 19, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jlMediaHum, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel11))
-                        .addGap(18, 18, 18)
-                        .addComponent(jlDesviacionTemp, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(20, Short.MAX_VALUE))
+                            .addComponent(jLabel12))
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(jLabel1)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(jLabel2)
+                                    .addComponent(jlNombre))
+                                .addGap(11, 11, 11)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(jLabel3)
+                                    .addComponent(jlPuerto))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(jLabel6)
+                                    .addComponent(jLabel10))
+                                .addGap(6, 6, 6)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(jlDesviacionTemp, javax.swing.GroupLayout.PREFERRED_SIZE, 19, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jlMediaTemp, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel11))
+                                .addGap(18, 18, 18)
+                                .addComponent(jlDesviacionHum, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(0, 0, Short.MAX_VALUE))
+                            .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addContainerGap())))
         );
 
         jPanel1Layout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {jlDesviacionHum, jlDesviacionTemp, jlMediaHum, jlMediaTemp});
@@ -562,25 +611,23 @@ public class SensorPanel extends javax.swing.JPanel {
 
             },
             new String [] {
-                "# Dato", "Humedad", "Temperatura", "Fecha"
+                "#", "Temp", "Hum", "Fecha"
             }
         ) {
-            Class[] types = new Class [] {
-                java.lang.String.class, java.lang.Object.class, java.lang.Object.class, java.lang.Object.class
-            };
             boolean[] canEdit = new boolean [] {
-                true, false, false, true
+                false, false, false, false
             };
-
-            public Class getColumnClass(int columnIndex) {
-                return types [columnIndex];
-            }
 
             public boolean isCellEditable(int rowIndex, int columnIndex) {
                 return canEdit [columnIndex];
             }
         });
         jScrollPane1.setViewportView(jtDatos);
+        if (jtDatos.getColumnModel().getColumnCount() > 0) {
+            jtDatos.getColumnModel().getColumn(0).setPreferredWidth(60);
+            jtDatos.getColumnModel().getColumn(1).setPreferredWidth(60);
+            jtDatos.getColumnModel().getColumn(2).setPreferredWidth(60);
+        }
 
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
         jPanel5.setLayout(jPanel5Layout);
@@ -664,12 +711,17 @@ public class SensorPanel extends javax.swing.JPanel {
         );
     }// </editor-fold>//GEN-END:initComponents
 
+    private void jcbNdatosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jcbNdatosActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jcbNdatosActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
+    private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -687,6 +739,7 @@ public class SensorPanel extends javax.swing.JPanel {
     private javax.swing.JPanel jPanel7;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JComboBox<String> jcbNdatos;
     private javax.swing.JLabel jlDesviacionHum;
     private javax.swing.JLabel jlDesviacionTemp;
     private javax.swing.JLabel jlHumedad;

@@ -1,8 +1,12 @@
 package com.udec.sistemaiot.dao.api;
 
+import com.udec.sistemaiot.domain.query.AvgData;
+
+import java.util.List;
+
 public interface SensorRepositoryCustom {
 
-    Double getAvgTemp(String puerto);
+    List<AvgData> avgtemp(String puerto);
 
-    Double getAvgHum(String puerto);
+    List<AvgData> avghum(String puerto);
 }

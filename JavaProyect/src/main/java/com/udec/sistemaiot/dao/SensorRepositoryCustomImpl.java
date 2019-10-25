@@ -1,29 +1,33 @@
 package com.udec.sistemaiot.dao;
 
 import com.udec.sistemaiot.dao.api.SensorRepositoryCustom;
+import com.udec.sistemaiot.domain.Sensor;
+import com.udec.sistemaiot.domain.query.AvgData;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
 
+import java.util.List;
+
 public class SensorRepositoryCustomImpl implements SensorRepositoryCustom {
-    
+
     private final MongoTemplate mongoTemplate;
-    
+
     @Autowired
     public SensorRepositoryCustomImpl(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
     }
 
     @Override
-    public Double getAvgTemp(String puerto) {
-        Criteria p = Criteria.where("puerto").is(puerto).andOperator(Criteria.);
-        Aggregation.match(p)
-        return null;
+    public List<AvgData> avghum(String puerto) {
+        Criteria p = Criteria.where("puerto").is(puerto);
+        Aggregation avg_humedad = Aggregation.newAggregation(Aggregation.match(p), (Aggregation.group().avg("historial.humedad").as("avghumedad")));
+        return mongoTemplate.aggregate(avg_humedad, Sensor.class, AvgData.class).getMappedResults();
     }
 
     @Override
-    public Double getAvgHum(String puerto) {
+    public List<AvgData> avgtemp(String puerto) {
         return null;
     }
 }

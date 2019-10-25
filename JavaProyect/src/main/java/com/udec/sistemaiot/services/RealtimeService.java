@@ -55,12 +55,13 @@ public class RealtimeService {
                                         historial = new ArrayList<>();
 
                                     Dato dato = new Dato(Double.valueOf(value[1]), Double.valueOf(value[0]), new Date());
-                                    JLabel jLabel = humedadLabel.get(sensorrefesh.getPuerto());
-                                    if (jLabel != null) jLabel.setText(String.valueOf(dato.getHumedad()));
-                                    JLabel jLabel1 = tempLabel.get(sensorrefesh.getPuerto());
-                                    if (jLabel1 != null) jLabel1.setText(String.valueOf(dato.getTemperatura()));
-
                                     historial.add(dato);
+
+                                    JLabel jLabel = humedadLabel.get(sensorrefesh.getPuerto());
+                                    if (jLabel != null) jLabel.setText(new StringBuilder().append(dato.getHumedad()).append(" - ").append(historial.stream().map(Dato::getHumedad).max(Double::compareTo).get()).toString());
+                                    JLabel jLabel1 = tempLabel.get(sensorrefesh.getPuerto());
+                                    if (jLabel1 != null) jLabel1.setText(new StringBuilder().append(dato.getTemperatura()).append(" - ").append(historial.stream().map(Dato::getTemperatura).max(Double::compareTo).get()).toString());
+
                                     sensorrefesh.setHistorial(historial);
                                     sensorRepository.save(sensorrefesh);
                                     EventAction action = actionMap.get(sensorrefesh.getPuerto());
