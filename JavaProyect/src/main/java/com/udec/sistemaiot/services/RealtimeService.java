@@ -4,6 +4,7 @@ import com.fazecast.jSerialComm.SerialPort;
 import com.udec.sistemaiot.dao.SensorRepository;
 import com.udec.sistemaiot.domain.Dato;
 import com.udec.sistemaiot.domain.Sensor;
+import com.udec.sistemaiot.events.EventAction;
 import com.udec.sistemaiot.ui.SensorForm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class RealtimeService {
     private Map<String, JLabel> humedadLabel = new HashMap<>();
     private Map<String, JLabel> tempLabel = new HashMap<>();
     private Map<String, Thread> threadMap = new HashMap<>();
+    private Map<String, EventAction> actionMap = new HashMap<>();
 
     @Autowired
     public RealtimeService(SensorRepository sensorRepository) {
@@ -36,39 +38,42 @@ public class RealtimeService {
         listall.forEach(sensor -> {
             Thread thread = threadMap.get(sensor.getPuerto());
             if (thread == null) {
-                Thread hilo = new Thread() {
+                Thread hilo = new Thread(() -> {
+                    try {
+                        SerialPort sp = SerialPort.getCommPort(sensor.getPuerto().trim());
+                        sp.setComPortParameters(9600, 8, 1, 0);
+                        sp.setComPortTimeouts(SerialPort.TIMEOUT_WRITE_BLOCKING, 0, 0);
+                        if (sp.openPort()) {
+                            while (true) {
+                                Thread.currentThread().sleep(2000);
+                                if (sp.bytesAvailable() > 0) {
+                                    Sensor sensorrefesh = sensorRepository.findByPuerto(sensor.getPuerto()).get(0);
+                                    BufferedReader br = new BufferedReader(new InputStreamReader(sp.getInputStream()));
+                                    String[] value = br.readLine().split(":");
+                                    List<Dato> historial = sensorrefesh.getHistorial();
+                                    if (historial == null)
+                                        historial = new ArrayList<>();
 
-                    @Override
-                    public synchronized void start() {
-                        try {
-                            SerialPort sp = SerialPort.getCommPort(sensor.getPuerto().trim());
-                            sp.setComPortParameters(9600, 8, 1, 0);
-                            sp.setComPortTimeouts(SerialPort.TIMEOUT_WRITE_BLOCKING, 0, 0);
-                            if (sp.openPort()) {
-                                while (true) {
-                                    Thread.currentThread().sleep(2000);
-                                    if (sp.bytesAvailable() > 0) {
-                                        Sensor sensorrefesh = sensorRepository.findByPuerto(sensor.getPuerto()).get(0);
-                                        BufferedReader br = new BufferedReader(new InputStreamReader(sp.getInputStream()));
-                                        String value = br.readLine();
-                                        System.out.println("" + value);
-                                        List<Dato> historial = sensorrefesh.getHistorial();
-                                        if (historial == null)
-                                            historial = new ArrayList<>();
+                                    Dato dato = new Dato(Double.valueOf(value[1]), Double.valueOf(value[0]), new Date());
+                                    JLabel jLabel = humedadLabel.get(sensorrefesh.getPuerto());
+                                    if (jLabel != null) jLabel.setText(String.valueOf(dato.getHumedad()));
+                                    JLabel jLabel1 = tempLabel.get(sensorrefesh.getPuerto());
+                                    if (jLabel1 != null) jLabel1.setText(String.valueOf(dato.getTemperatura()));
 
-                                        historial.add(new Dato(Double.valueOf(value), Double.valueOf(value), new Date()));
-                                        sensorrefesh.setHistorial(historial);
-                                        sensorRepository.save(sensorrefesh);
-                                    }
-
+                                    historial.add(dato);
+                                    sensorrefesh.setHistorial(historial);
+                                    sensorRepository.save(sensorrefesh);
+                                    EventAction action = actionMap.get(sensorrefesh.getPuerto());
+                                    if (action != null) action.doIt(sensorrefesh);
                                 }
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
 
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                };
+
+                });
                 threadMap.put(sensor.getPuerto(), hilo);
                 hilo.start();
             }
@@ -81,5 +86,9 @@ public class RealtimeService {
 
     public JLabel putTempLabel(String key, JLabel value) {
         return tempLabel.put(key, value);
+    }
+
+    public EventAction putActionMap(String key, EventAction value) {
+        return actionMap.put(key, value);
     }
 }

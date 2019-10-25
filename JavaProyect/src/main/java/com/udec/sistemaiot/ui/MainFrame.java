@@ -9,9 +9,9 @@ import com.udec.sistemaiot.App;
 import com.udec.sistemaiot.dao.SensorRepository;
 import com.udec.sistemaiot.domain.Sensor;
 import com.udec.sistemaiot.services.RealtimeService;
-import javax.swing.JMenuItem;
 
-import javax.swing.WindowConstants;
+import javax.swing.*;
+import java.awt.event.ActionEvent;
 
 /**
  *
@@ -33,10 +33,14 @@ public class MainFrame extends javax.swing.JFrame {
     }
 
     private void loadMenuSensores() {
-        jmmSensores.removeAll();
-        sensorRepository.findAll().forEach(e -> {
-            final JMenuItem jMenuItem = new JMenuItem(e.getNombre());
-            jMenuItem.Ad
+        sensorRepository.findAll().forEach(sensor -> {
+            final JMenuItem jMenuItem = new JMenuItem(new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    jtpVentanas.add(sensor.getNombre(),new SensorPanel(sensor, sensorRepository));
+                }
+            });
+            jMenuItem.setText(sensor.getNombre());
             jmmSensores.add(jMenuItem);
         });
     }
@@ -51,7 +55,7 @@ public class MainFrame extends javax.swing.JFrame {
     private void initComponents() {
 
         jMenuItem3 = new javax.swing.JMenuItem();
-        jTabbedPane1 = new javax.swing.JTabbedPane();
+        jtpVentanas = new javax.swing.JTabbedPane();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
@@ -97,11 +101,11 @@ public class MainFrame extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 400, Short.MAX_VALUE)
+            .addComponent(jtpVentanas, javax.swing.GroupLayout.DEFAULT_SIZE, 765, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 279, Short.MAX_VALUE)
+            .addComponent(jtpVentanas, javax.swing.GroupLayout.DEFAULT_SIZE, 467, Short.MAX_VALUE)
         );
 
         pack();
@@ -129,9 +133,9 @@ public class MainFrame extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JPopupMenu.Separator jSeparator1;
-    private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JMenuItem jmiIniciar;
     private javax.swing.JMenu jmmSensores;
+    private javax.swing.JTabbedPane jtpVentanas;
     // End of variables declaration//GEN-END:variables
 
 }
