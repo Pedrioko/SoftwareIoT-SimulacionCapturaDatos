@@ -7,8 +7,10 @@ package com.udec.sistemaiot.domain;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -25,8 +27,11 @@ public class Sensor {
     private String nombre;
     private String descripcion;
     private String puerto;
-
-    private List<Dato> historial;
+    private Double minValueHum;
+    private Double maxValueHum;
+    private Double minValueTemp;
+    private Double maxValueTemp;
+    private List<Dato> historial = new ArrayList<>();
 
     public Sensor() {
     }
@@ -75,6 +80,38 @@ public class Sensor {
 
     public void setHistorial(List<Dato> historial) {
         this.historial = historial;
+    }
+
+    public Double getMinValueHum() {
+        return minValueHum;
+    }
+
+    public void setMinValueHum(Double minValueHum) {
+        this.minValueHum = minValueHum;
+    }
+
+    public Double getMaxValueHum() {
+        return maxValueHum;
+    }
+
+    public void setMaxValueHum(Double maxValueHum) {
+        this.maxValueHum = maxValueHum;
+    }
+
+    public Double getMinValueTemp() {
+        return minValueTemp;
+    }
+
+    public void setMinValueTemp(Double minValueTemp) {
+        this.minValueTemp = minValueTemp;
+    }
+
+    public Double getMaxValueTemp() {
+        return maxValueTemp;
+    }
+
+    public void setMaxValueTemp(Double maxValueTemp) {
+        this.maxValueTemp = maxValueTemp;
     }
 
     @Override

@@ -33,11 +33,12 @@ public class MainFrame extends javax.swing.JFrame {
     }
 
     private void loadMenuSensores() {
+        jmmSensores.removeAll();
         sensorRepository.findAll().forEach(sensor -> {
             final JMenuItem jMenuItem = new JMenuItem(new AbstractAction() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    jtpVentanas.add(sensor.getNombre(),new SensorPanel(sensor, sensorRepository));
+                    jtpVentanas.add(sensor.getNombre(), new SensorPanel(sensor, sensorRepository));
                 }
             });
             jMenuItem.setText(sensor.getNombre());
@@ -112,7 +113,7 @@ public class MainFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        SensorForm sensorForm = new SensorForm(e -> {
+        SensorForm sensorForm = new SensorForm(null, e -> {
             sensorRepository.save((Sensor) e);
             loadMenuSensores();
         });
